@@ -1,0 +1,72 @@
+Vamos começar com as informações iniciais:
+
+ 
+
+1. Interface do Usuário (O Totem)
+
+Precisamos criar alguma forma de identificar o funcionário.
+
+Seja digitando o CPF ou com reconhecimento facial. 
+Acredito que neste momento deveríamos fazer digitando o CPF para ficar mais fácil a identificação. 
+Se o funcionário digitar o CPF errado, o sistema deverá emitir um aviso de CPF inválido.
+
+Depois de confirmado o funcionário, o sistema deverá apresentar 2 opções de
+restaurante sendo: Fino Sabor e Fonte do Paladar. 
+Estes botões deverão conter a logo do restaurante e deixar a tela de fundo escura para enfatizar os botões.
+
+Depois de escolher o restaurante, o funcionário deverá escolher o tamanho da marmita. 
+No restaurante Fino Sabor terá as opções: Média, Grande e Fitness. 
+No restaurante Fonte do Paladar as opções são Mini e Média.
+
+Depois de escolher o tamanho, vem a opção de carnes podendo
+escolher até 3 itens.
+
+Depois da opção pelas carnes, vem a opção de acompanhamentos podendo escolher
+até 3 itens.
+
+Depois dos acompanhamentos, o sistema pergunta se terá algum adicional sendo
+eles: Ovo frito, ovo mexido, ovo cozido, legumes.
+
+Em todas as opções, o sistema deverá ter um botão de avançar
+e outro de retornar ao menu anterior.
+
+Depois de escolhidas as opções, o sistema deverá perguntar
+se está tudo correto e se deseja finalizar o pedido e enviar para a listagem
+final.
+
+
+2. Painel do Administrador (Backoffice)
+
+Agora, vamos falar sobre a usabilidade para o administrador:
+
+O sistema deverá ter um botão  pequeno sendo menu hamburguer para as opções
+do administrador sendo: Gerar listagem Fino Sabor, Gerar listagem Fonte do
+Paladar e Gerar listagem de quem não pediu almoço.
+
+Estas listagens deverão ser geradas em tela com opção de salvar em PDF. 
+
+Na listagem deverá sair um cabeçalho com o nome e logo do restaurante e abaixo a
+listagem dos funcionários e pedidos realizados. Cada pedido deverá ser listado
+sendo separados por linhas.
+
+Dentro do menu hamburguer deverá ter também uma opção para
+editar o cardápio do dia seguinte ou do dia atual.
+
+No cardápio do fino sabor deverá ter as opções de arroz e feijão. As opções
+variáveis serão as carnes que o sistema deverá abrir um espaço de 10 opções para
+digitar os nomes e 15 opções de acompanhamentos para digitar. Na marmita fitness
+o menu é fixo e não tem alterações diárias.
+
+
+3. Estrutura do Banco de Dados (PostgreSQL)
+
+Para suportar todas essas escolhas e manter o histórico organizado, 
+o banco de dados pode ser estruturado em três tabelas principais:
+
+Tabela funcionários: cpf (Chave Primária), nome, setor, status_ativo.
+
+Tabela cardapio_diario: data, restaurante, categoria (ex: carne, acompanhamento, adicional), nome_do_item. 
+(A marmita fitness entra aqui como um item fixo sem variação de data).
+
+Tabela pedidos: id, cpf_funcionario, data, restaurante, tamanho, carnes_escolhidas, acompanhamentos_escolhidos, adicionais_escolhidos.
+

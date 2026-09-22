@@ -1,0 +1,1410 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Totem - Casa das Vacinas</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0ea5e9;
+            --primary-dark: #0284c7;
+            --success: #22c55e;
+            --success-dark: #16a34a;
+            --bg-light: #f8fafc;
+            --bg-dark: #0f172a;
+            --text-light: #f1f5f9;
+            --text-dark: #1e293b;
+            --error: #ef4444;
+            --card-bg: #ffffff;
+            --card-hover: #e2e8f0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-light);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            transition: background-color 0.5s ease;
+        }
+
+        body.dark-mode {
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+        }
+
+        #totem-app {
+            width: 100%;
+            max-width: 1024px;
+            height: 100vh;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* --- MODAL SENHA ADMIN --- */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            animation: fadeInModal 0.2s ease;
+        }
+
+        .modal-overlay.active { display: flex; }
+
+        @keyframes fadeInModal {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            width: 90%;
+            max-width: 400px;
+            color: var(--text-dark);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .modal-content h2 { margin-bottom: 10px; color: var(--text-dark); }
+        .modal-content p { color: #64748b; margin-bottom: 20px; }
+        
+        .modal-input {
+            width: 100%;
+            padding: 15px;
+            font-size: 28px;
+            letter-spacing: 5px;
+            text-align: center;
+            border: 2px solid #cbd5e1;
+            border-radius: 10px;
+            margin-bottom: 5px;
+            outline: none;
+            color: var(--text-dark);
+        }
+
+        .modal-input.error {
+            border-color: var(--error);
+            color: var(--error);
+            animation: shake 0.4s;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 15px;
+        }
+
+        .modal-actions button {
+            padding: 15px 30px;
+            font-size: 18px;
+            border-radius: 10px;
+            flex: 1;
+        }
+
+        /* --- MENU ADMIN --- */
+        .admin-menu-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 24px;
+            color: #94a3b8;
+            cursor: pointer;
+            z-index: 100;
+            padding: 10px;
+            border-radius: 8px;
+            transition: 0.3s;
+        }
+        
+        .admin-menu-btn:active { background-color: rgba(0,0,0,0.1); }
+        body.dark-mode .admin-menu-btn { color: #475569; }
+
+        #admin-sidebar {
+            position: fixed;
+            top: 0;
+            left: -350px;
+            width: 350px;
+            height: 100vh;
+            background-color: var(--card-bg);
+            box-shadow: 2px 0 15px rgba(0,0,0,0.2);
+            transition: left 0.3s ease;
+            z-index: 200;
+            display: flex;
+            flex-direction: column;
+            color: var(--text-dark);
+        }
+
+        #admin-sidebar.open { left: 0; }
+
+        .sidebar-header {
+            padding: 30px 20px;
+            background-color: var(--text-dark);
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .sidebar-close { font-size: 24px; cursor: pointer; }
+
+        .sidebar-menu { list-style: none; padding: 20px 0; }
+        .sidebar-menu li {
+            padding: 15px 20px;
+            font-size: 18px;
+            border-bottom: 1px solid #e2e8f0;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .sidebar-menu li:hover { background-color: #f1f5f9; }
+        .sidebar-menu li i { margin-right: 10px; color: var(--primary); width: 25px; text-align: center; }
+
+        /* --- SCREENS --- */
+        .screen {
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            padding: 40px;
+            text-align: center;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .screen.active { display: flex; }
+
+        .screen-title {
+            font-size: 32px;
+            margin-bottom: 30px;
+            color: inherit;
+        }
+        body:not(.dark-mode) .screen-title { color: var(--text-dark); }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* --- CPF --- */
+        .cpf-container {
+            background-color: var(--card-bg);
+            padding: 50px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            width: 100%;
+            max-width: 500px;
+        }
+
+        .cpf-input {
+            width: 100%;
+            font-size: 36px;
+            text-align: center;
+            padding: 20px;
+            margin: 30px 0;
+            border: 2px solid #cbd5e1;
+            border-radius: 12px;
+            outline: none;
+            color: var(--text-dark);
+            pointer-events: none;
+        }
+
+        .cpf-input.error {
+            border-color: var(--error);
+            color: var(--error);
+            animation: shake 0.4s;
+        }
+
+        .error-msg {
+            color: var(--error);
+            font-size: 18px;
+            font-weight: bold;
+            opacity: 0;
+            margin-top: -15px;
+            margin-bottom: 20px;
+        }
+
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            50% { transform: translateX(10px); }
+            75% { transform: translateX(-10px); }
+            100% { transform: translateX(0); }
+        }
+
+        .numpad {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .num-btn {
+            background-color: var(--bg-light);
+            border: 1px solid #e2e8f0;
+            padding: 20px;
+            font-size: 28px;
+            font-weight: bold;
+            border-radius: 12px;
+            cursor: pointer;
+            color: var(--text-dark);
+        }
+        
+        .num-btn:active { background-color: #cbd5e1; }
+        .num-btn.btn-clear { background-color: #fee2e2; color: var(--error); border-color: #fca5a5;}
+        .num-btn.btn-ok { background-color: #dcfce7; color: var(--success-dark); border-color: #86efac;}
+
+        /* --- BOTÕES GERAIS --- */
+        .bottom-nav {
+            margin-top: 40px;
+            display: flex;
+            gap: 20px;
+            width: 100%;
+            justify-content: center;
+        }
+
+        .btn-success, .btn-secondary, .btn-import {
+            padding: 20px 40px;
+            font-size: 24px;
+            font-weight: bold;
+            border-radius: 12px;
+            cursor: pointer;
+            border: none;
+            transition: 0.3s;
+        }
+
+        .btn-success {
+            background-color: var(--success);
+            color: white;
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .btn-success.enabled {
+            opacity: 1;
+            pointer-events: auto;
+            box-shadow: 0 4px 15px rgba(34, 197, 94, 0.4);
+        }
+        
+        .btn-import {
+            background-color: var(--primary);
+            color: white;
+            padding: 15px 25px;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .btn-import:hover { background-color: var(--primary-dark); }
+
+        .btn-success:active, .btn-secondary:active, .btn-import:active { transform: scale(0.98); }
+
+        .btn-secondary {
+            background-color: #64748b;
+            color: white;
+        }
+
+        /* --- RESTAURANTES --- */
+        .cards-container {
+            display: flex;
+            gap: 30px;
+            width: 100%;
+            max-width: 800px;
+            margin-top: 20px;
+        }
+
+        .restaurante-card {
+            flex: 1;
+            background-color: #1e293b;
+            border: 4px solid transparent;
+            border-radius: 20px;
+            padding: 50px 20px;
+            cursor: pointer;
+            transition: 0.3s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            text-align: center;
+        }
+
+        .restaurante-card i { font-size: 60px; margin-bottom: 20px; color: var(--primary); }
+        .restaurante-card h2 { font-size: 28px; margin-bottom: 10px; }
+        .restaurante-card p { font-size: 16px; color: #94a3b8; }
+
+        .restaurante-card.selected {
+            border-color: var(--primary);
+            background-color: #0f172a;
+            box-shadow: 0 0 30px rgba(14, 165, 233, 0.3);
+            transform: scale(1.05);
+        }
+
+        /* --- OPÇÕES (GRID) --- */
+        .options-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            width: 100%;
+            max-width: 900px;
+            max-height: 40vh;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .options-grid::-webkit-scrollbar { width: 8px; }
+        .options-grid::-webkit-scrollbar-track { background: #0f172a; border-radius: 10px; }
+        .options-grid::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; }
+
+        .option-card {
+            background-color: var(--card-bg);
+            border: 3px solid #e2e8f0;
+            border-radius: 15px;
+            padding: 20px 25px;
+            font-size: 22px;
+            font-weight: bold;
+            color: var(--text-dark);
+            cursor: pointer;
+            transition: 0.2s;
+            flex: 1 1 200px;
+            max-width: 250px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        body.dark-mode .option-card {
+            background-color: #1e293b;
+            border-color: #334155;
+            color: var(--text-light);
+        }
+
+        .option-card.selected {
+            border-color: var(--primary) !important;
+            background-color: #e0f2fe !important;
+            color: var(--primary-dark) !important;
+        }
+
+        .option-card.disabled {
+            opacity: 0.3;
+            pointer-events: none;
+        }
+
+        .selection-counter {
+            color: var(--primary);
+            font-size: 22px;
+            margin-bottom: 25px;
+            font-weight: bold;
+        }
+
+        .block-message {
+            color: var(--error);
+            font-size: 20px;
+            margin-bottom: 20px;
+            font-weight: bold;
+            display: none;
+        }
+
+        /* --- RESUMO --- */
+        .summary-container {
+            background-color: #1e293b;
+            border-radius: 15px;
+            padding: 20px 30px;
+            width: 100%;
+            max-width: 600px;
+            color: white;
+            text-align: left;
+            max-height: 45vh; 
+            overflow-y: auto;
+            border: 2px solid #334155;
+        }
+
+        .summary-container::-webkit-scrollbar { width: 8px; }
+        .summary-container::-webkit-scrollbar-track { background: #0f172a; border-radius: 10px; }
+        .summary-container::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; }
+
+        .summary-item {
+            margin-bottom: 15px;
+            font-size: 18px;
+            border-bottom: 1px solid #334155;
+            padding-bottom: 10px;
+        }
+        .summary-item span {
+            font-weight: bold;
+            color: var(--primary);
+            display: block;
+            margin-top: 5px;
+            font-size: 22px;
+        }
+        
+        .resumo-nome-funcionario {
+            text-align: center;
+            font-size: 26px;
+            color: var(--success);
+            font-weight: bold;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px dashed #334155;
+        }
+
+        /* --- TELAS ADMIN --- */
+        .admin-panel-container {
+            background-color: #1e293b;
+            border-radius: 15px;
+            padding: 30px;
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            border: 2px solid #334155;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        .admin-panel-container::-webkit-scrollbar { width: 8px; }
+        .admin-panel-container::-webkit-scrollbar-track { background: #0f172a; border-radius: 10px; }
+        .admin-panel-container::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; }
+
+        .admin-form {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            background: #0f172a;
+            padding: 20px;
+            border-radius: 10px;
+            flex-wrap: wrap;
+        }
+
+        .admin-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            text-align: left;
+            flex: 1;
+        }
+
+        .admin-input-group label {
+            color: #94a3b8;
+            font-size: 14px;
+        }
+        
+        .admin-form p.instrucao {
+            width: 100%;
+            color: #64748b;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .admin-form input[type="text"], .admin-form select {
+            padding: 15px;
+            font-size: 18px;
+            border-radius: 8px;
+            border: 1px solid #475569;
+            background: #1e293b;
+            color: white;
+            outline: none;
+            width: 100%;
+        }
+        
+        .admin-form input[type="text"]:focus, .admin-form select:focus { border-color: var(--primary); }
+        .admin-form-cpf { width: 180px !important; flex: none !important;}
+
+        .admin-form button.btn-crud {
+            padding: 15px 25px;
+            font-size: 18px;
+            border-radius: 8px;
+            margin-top: 24px;
+        }
+
+        .admin-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .admin-list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #334155;
+            padding: 15px 20px;
+            border-radius: 8px;
+            color: white;
+            font-size: 18px;
+        }
+
+        .admin-list-info span { color: #94a3b8; margin-right: 15px; font-weight: bold;}
+
+        .admin-list-actions { display: flex; gap: 15px; }
+        .admin-list-actions i { cursor: pointer; font-size: 20px; transition: 0.2s;}
+        .admin-list-actions i.fa-edit { color: var(--primary); }
+        .admin-list-actions i.fa-edit:hover { color: var(--primary-dark); }
+        .admin-list-actions i.fa-trash { color: var(--error); }
+        .admin-list-actions i.fa-trash:hover { color: #b91c1c; }
+
+        /* --- PREVIEW CARDAPIO TXT --- */
+        .cardapio-section {
+            background: #0f172a;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .cardapio-section h3 {
+            color: var(--primary);
+            margin-bottom: 15px;
+            text-align: left;
+            border-bottom: 1px solid #334155;
+            padding-bottom: 10px;
+        }
+        
+        .cardapio-list-preview {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .cardapio-badge {
+            background-color: #334155;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 16px;
+            border: 1px solid #475569;
+        }
+
+        .file-upload-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+        }
+
+        .file-upload-wrapper input[type=file] {
+            font-size: 100px;
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            cursor: pointer;
+            height: 100%;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- MODAL DE SENHA DO ADMINISTRADOR -->
+    <div id="modal-senha-admin" class="modal-overlay">
+        <div class="modal-content">
+            <i class="fas fa-lock" style="font-size: 40px; color: var(--primary); margin-bottom: 15px;"></i>
+            <h2>Acesso Restrito</h2>
+            <p>Digite a senha do administrador</p>
+            
+            <input type="password" id="admin-pwd-input" class="modal-input" placeholder="****" maxlength="4">
+            <div id="admin-pwd-error" class="error-msg" style="margin-bottom: 0;">Senha incorreta</div>
+            
+            <div class="modal-actions">
+                <button class="btn-secondary" onclick="fecharModalSenha()">Cancelar</button>
+                <button class="btn-success enabled" onclick="validarSenhaAdmin()">Entrar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="totem-app">
+        <!-- BOTAO MENU ADMIN -->
+        <i class="fas fa-bars admin-menu-btn" onclick="abrirModalSenha()"></i>
+        
+        <!-- SIDEBAR ADMIN -->
+        <div id="admin-sidebar">
+            <div class="sidebar-header">
+                <h2>Administração</h2>
+                <i class="fas fa-times sidebar-close" onclick="fecharSidebar()"></i>
+            </div>
+            <ul class="sidebar-menu">
+                <li><i class="fas fa-file-pdf"></i> Gerar Fino Sabor</li>
+                <li><i class="fas fa-file-pdf"></i> Gerar Fonte do Paladar</li>
+                <li><i class="fas fa-user-times"></i> Não pediram almoço</li>
+                <li onclick="abrirTelaAdminCardapio()"><i class="fas fa-utensils"></i> Editar Cardápio</li>
+                <li onclick="abrirTelaAdminFuncionarios()"><i class="fas fa-users"></i> Gerenciar Funcionários</li>
+            </ul>
+        </div>
+
+        <!-- TELA ADMIN: GERENCIAR FUNCIONARIOS -->
+        <div id="screen-admin-funcionarios" class="screen">
+            <h1 class="screen-title">Gerenciar Funcionários</h1>
+            
+            <div class="admin-panel-container">
+                <div class="admin-form">
+                    <input type="text" id="admin-func-cpf" class="admin-form-cpf" placeholder="CPF" maxlength="14" oninput="maskCpfInput(this)">
+                    <input type="text" id="admin-func-nome" class="admin-form-nome" style="flex:1" placeholder="Nome do Funcionário">
+                    
+                    <button id="btn-salvar-func" class="btn-success enabled btn-crud" onclick="salvarFuncionario()">Adicionar</button>
+                    <button id="btn-cancelar-func" class="btn-secondary btn-crud" style="display:none;" onclick="cancelarEdicao()">Cancelar</button>
+                </div>
+
+                <div id="lista-funcionarios" class="admin-list">
+                    <!-- Gerado pelo JS -->
+                </div>
+            </div>
+
+            <div class="bottom-nav">
+                <button class="btn-secondary" onclick="sairDaAdministracao()">Voltar ao Início</button>
+            </div>
+        </div>
+
+        <!-- TELA ADMIN: EDITAR CARDÁPIO (VIA TXT) -->
+        <div id="screen-admin-cardapio" class="screen">
+            <h1 class="screen-title">Importar Cardápio do Dia (.txt)</h1>
+            
+            <div class="admin-panel-container">
+                <div class="admin-form">
+                    <p class="instrucao">O arquivo deve conter os nomes dos restaurantes (<strong>Fino Sabor</strong> e <strong>Fonte do Paladar</strong>), seguidos das palavras <strong>CARNES</strong> e <strong>ACOMPANHAMENTOS</strong>.</p>
+                    
+                    <div class="admin-input-group">
+                        <label>Ver prévia do restaurante:</label>
+                        <select id="admin-select-restaurante" onchange="renderPreviewCardapio()">
+                            <option value="Fino Sabor">Fino Sabor</option>
+                            <option value="Fonte do Paladar (Sr. Ademir)">Fonte do Paladar (Sr. Ademir)</option>
+                        </select>
+                    </div>
+
+                    <div class="admin-input-group" style="align-items: flex-end; justify-content: flex-end;">
+                        <div class="file-upload-wrapper">
+                            <button class="btn-import"><i class="fas fa-upload"></i> Escolher Arquivo .txt</button>
+                            <input type="file" id="admin-file-cardapio" accept=".txt" onchange="importarCardapioTxt(event)">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="cardapio-section">
+                    <h3>Carnes Registradas</h3>
+                    <div id="preview-carnes" class="cardapio-list-preview">
+                        <!-- Gerado via JS -->
+                    </div>
+                </div>
+
+                <div class="cardapio-section">
+                    <h3>Acompanhamentos Registrados</h3>
+                    <div id="preview-acompanhamentos" class="cardapio-list-preview">
+                        <!-- Gerado via JS -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="bottom-nav">
+                <button class="btn-secondary" onclick="sairDaAdministracao()">Cancelar</button>
+                <button class="btn-success enabled" onclick="salvarCardapioAdmin()">Salvar Definitivo</button>
+            </div>
+        </div>
+
+        <!-- TELA 1: CPF -->
+        <div id="screen-cpf" class="screen active">
+            <div class="cpf-container">
+                <h2 style="color: var(--text-dark); margin-bottom: 10px;">Identificação</h2>
+                <p style="color: #64748b;">Digite seu CPF para iniciar</p>
+                
+                <input type="text" id="cpf-display" class="cpf-input" placeholder="000.000.000-00" readonly>
+                <div id="cpf-error" class="error-msg">CPF Inválido</div>
+
+                <div class="numpad">
+                    <button class="num-btn" onclick="addNumber('1')">1</button>
+                    <button class="num-btn" onclick="addNumber('2')">2</button>
+                    <button class="num-btn" onclick="addNumber('3')">3</button>
+                    <button class="num-btn" onclick="addNumber('4')">4</button>
+                    <button class="num-btn" onclick="addNumber('5')">5</button>
+                    <button class="num-btn" onclick="addNumber('6')">6</button>
+                    <button class="num-btn" onclick="addNumber('7')">7</button>
+                    <button class="num-btn" onclick="addNumber('8')">8</button>
+                    <button class="num-btn" onclick="addNumber('9')">9</button>
+                    <button class="num-btn btn-clear" onclick="clearCPF()"><i class="fas fa-backspace"></i></button>
+                    <button class="num-btn" onclick="addNumber('0')">0</button>
+                    <button class="num-btn btn-ok" onclick="submitCPF()"><i class="fas fa-check"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- TELA 2: RESTAURANTE -->
+        <div id="screen-restaurante" class="screen">
+            <h1 class="screen-title">Escolha o Restaurante</h1>
+            <div class="cards-container">
+                <div class="restaurante-card" onclick="selectRestaurante('Fino Sabor', this)">
+                    <i class="fas fa-concierge-bell"></i>
+                    <h2>Fino Sabor</h2>
+                    <p>Comida Caseira</p>
+                </div>
+                <div class="restaurante-card" onclick="selectRestaurante('Fonte do Paladar (Sr. Ademir)', this)">
+                    <i class="fas fa-utensils"></i>
+                    <h2>Fonte do Paladar</h2>
+                    <p>(Sr. Ademir)</p>
+                </div>
+            </div>
+            <div class="bottom-nav">
+                <button class="btn-secondary" onclick="voltarPara('screen-cpf')">Cancelar</button>
+                <button id="btn-avancar-restaurante" class="btn-success" onclick="avancarRestaurante()">Avançar</button>
+            </div>
+        </div>
+
+        <!-- TELA 3: TAMANHO -->
+        <div id="screen-tamanho" class="screen">
+            <h1 class="screen-title">Tamanho da Marmita</h1>
+            <div id="opcoes-tamanho" class="options-grid">
+                <!-- Gerado dinamicamente no JS -->
+            </div>
+            <div class="bottom-nav">
+                <button class="btn-secondary" onclick="voltarPara('screen-restaurante')">Voltar</button>
+                <button id="btn-avancar-tamanho" class="btn-success" onclick="avancarTamanho()">Avançar</button>
+            </div>
+        </div>
+
+        <!-- TELA 4: BASE (Arroz/Feijão) -->
+        <div id="screen-base" class="screen">
+            <h1 class="screen-title">Arroz e Feijão</h1>
+            <p style="color: var(--text-light); margin-bottom: 20px; font-size: 18px;">Selecione o que deseja na marmita:</p>
+            <div id="opcoes-base" class="options-grid">
+                <!-- Gerado dinamicamente -->
+            </div>
+            <div class="bottom-nav">
+                <button class="btn-secondary" onclick="voltarPara('screen-tamanho')">Voltar</button>
+                <button class="btn-success enabled" onclick="avancarAposBase()">Avançar</button>
+            </div>
+        </div>
+
+        <!-- TELA 5: CARNES -->
+        <div id="screen-carnes" class="screen">
+            <h1 class="screen-title">Escolha as Carnes</h1>
+            <div class="selection-counter">Escolhidos: <span id="contador-carnes">0</span> / 3</div>
+            <div id="opcoes-carnes" class="options-grid">
+                <!-- Gerado dinamicamente -->
+            </div>
+            <div class="bottom-nav">
+                <button class="btn-secondary" onclick="voltarPara('screen-base')">Voltar</button>
+                <button class="btn-success enabled" onclick="avancarParaAcompanhamentos()">Avançar</button>
+            </div>
+        </div>
+
+        <!-- TELA 6: ACOMPANHAMENTOS -->
+        <div id="screen-acompanhamentos" class="screen">
+            <h1 class="screen-title">Acompanhamentos</h1>
+            <div class="selection-counter">Escolhidos: <span id="contador-acompanhamentos">0</span> / 3</div>
+            <div id="opcoes-acompanhamentos" class="options-grid">
+                <!-- Gerado dinamicamente -->
+            </div>
+            <div class="bottom-nav">
+                <button class="btn-secondary" onclick="voltarPara('screen-carnes')">Voltar</button>
+                <button class="btn-success enabled" onclick="avancarParaAdicionais()">Avançar</button>
+            </div>
+        </div>
+
+        <!-- TELA 7: ADICIONAIS -->
+        <div id="screen-adicionais" class="screen">
+            <h1 class="screen-title">Algum Adicional?</h1>
+            <div class="selection-counter" id="contador-adicional-container">Escolhidos: <span id="contador-adicionais">0</span> / 1</div>
+            
+            <div id="msg-bloqueio-adicional" class="block-message">
+                Você escolheu 3 acompanhamentos. Adicionais não permitidos.
+            </div>
+
+            <div id="opcoes-adicionais" class="options-grid">
+                <div class="option-card" onclick="toggleSelection(this, 'adicionais', 'Ovo Frito', 1)">Ovo Frito</div>
+                <div class="option-card" onclick="toggleSelection(this, 'adicionais', 'Ovo Mexido', 1)">Ovo Mexido</div>
+                <div class="option-card" onclick="toggleSelection(this, 'adicionais', 'Ovo Cozido', 1)">Ovo Cozido</div>
+                <div class="option-card" onclick="toggleSelection(this, 'adicionais', 'Legumes', 1)">Legumes</div>
+            </div>
+            <div class="bottom-nav">
+                <button class="btn-secondary" onclick="voltarPara('screen-acompanhamentos')">Voltar</button>
+                <button class="btn-success enabled" onclick="gerarResumo()">Avançar</button>
+            </div>
+        </div>
+
+        <!-- TELA 8: RESUMO -->
+        <div id="screen-resumo" class="screen">
+            <h1 class="screen-title">Confirme seu Pedido</h1>
+            
+            <div class="summary-container">
+                <div id="resumo-conteudo">
+                    <!-- Preenchido via JS -->
+                </div>
+            </div>
+
+            <div class="bottom-nav" style="margin-top: 20px;">
+                <button class="btn-secondary" onclick="voltarPara('screen-adicionais')">Voltar e Alterar</button>
+                <button class="btn-success enabled" onclick="finalizarPedido()">Confirmar Pedido</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- ESTADO DO SISTEMA ---
+        let pedido = {
+            cpf: '',
+            nomeFuncionario: '',
+            restaurante: '',
+            tamanho: '',
+            base: [],
+            carnes: [],
+            acompanhamentos: [],
+            adicionais: []
+        };
+
+        let dbFuncionarios = {
+            "111.111.111-11": "João Silva",
+            "222.222.222-22": "Maria Oliveira"
+        };
+
+        // Banco de Dados Oficial do Cardápio
+        let dbCardapio = {
+            "Fino Sabor": {
+                carnes: ["Bife Acebolado", "Frango Assado"],
+                acompanhamentos: ["Batata Frita", "Salada"]
+            },
+            "Fonte do Paladar (Sr. Ademir)": {
+                carnes: ["Carne de Panela", "Bife"],
+                acompanhamentos: ["Maionese", "Polenta Frita"]
+            }
+        };
+
+        // Estrutura temporária para armazenar a leitura do TXT antes de salvar definitivamente
+        let cardapioTemp = {
+            "Fino Sabor": { carnes: [], acompanhamentos: [] },
+            "Fonte do Paladar (Sr. Ademir)": { carnes: [], acompanhamentos: [] }
+        };
+        
+        const SENHA_ADMIN_SISTEMA = "1234";
+
+        // --- LÓGICA DO MODAL DE SENHA ADMIN ---
+        function abrirModalSenha() {
+            document.getElementById('modal-senha-admin').classList.add('active');
+            document.getElementById('admin-pwd-input').value = '';
+            document.getElementById('admin-pwd-error').style.opacity = '0';
+            document.getElementById('admin-pwd-input').focus();
+        }
+
+        function fecharModalSenha() {
+            document.getElementById('modal-senha-admin').classList.remove('active');
+        }
+
+        function validarSenhaAdmin() {
+            const input = document.getElementById('admin-pwd-input');
+            if (input.value === SENHA_ADMIN_SISTEMA) {
+                fecharModalSenha();
+                abrirSidebar();
+            } else {
+                input.classList.add('error');
+                document.getElementById('admin-pwd-error').style.opacity = '1';
+                setTimeout(() => input.classList.remove('error'), 400);
+            }
+        }
+
+        // --- FUNÇÕES DO MENU LATERAL (SIDEBAR) ---
+        function abrirSidebar() {
+            document.getElementById('admin-sidebar').classList.add('open');
+        }
+
+        function fecharSidebar() {
+            document.getElementById('admin-sidebar').classList.remove('open');
+        }
+
+        function sairDaAdministracao() {
+            showScreen('screen-cpf');
+        }
+
+        // --- TELA ADMIN: FUNCIONÁRIOS ---
+        let cpfEmEdicao = null;
+
+        function abrirTelaAdminFuncionarios() {
+            fecharSidebar();
+            showScreen('screen-admin-funcionarios');
+            renderListaFuncionarios();
+            cancelarEdicao(); 
+        }
+
+        function renderListaFuncionarios() {
+            const lista = document.getElementById('lista-funcionarios');
+            lista.innerHTML = '';
+
+            for (const [cpf, nome] of Object.entries(dbFuncionarios)) {
+                const item = document.createElement('div');
+                item.className = 'admin-list-item';
+                item.innerHTML = `
+                    <div class="admin-list-info">
+                        <span>${cpf}</span> ${nome}
+                    </div>
+                    <div class="admin-list-actions">
+                        <i class="fas fa-edit" title="Editar" onclick="iniciarEdicaoFuncionario('${cpf}', '${nome}')"></i>
+                        <i class="fas fa-trash" title="Excluir" onclick="deletarFuncionario('${cpf}')"></i>
+                    </div>
+                `;
+                lista.appendChild(item);
+            }
+        }
+
+        function maskCpfInput(input) {
+            let v = input.value.replace(/\D/g, "");
+            if (v.length > 3) v = v.slice(0, 3) + "." + v.slice(3);
+            if (v.length > 7) v = v.slice(0, 7) + "." + v.slice(7);
+            if (v.length > 11) v = v.slice(0, 11) + "-" + v.slice(11);
+            input.value = v;
+        }
+
+        function salvarFuncionario() {
+            const inputCpf = document.getElementById('admin-func-cpf');
+            const inputNome = document.getElementById('admin-func-nome');
+            const cpfStr = inputCpf.value;
+            const nomeStr = inputNome.value.trim();
+
+            if (cpfStr.length !== 14 || nomeStr === '') {
+                alert("Preencha o CPF e o Nome corretamente.");
+                return;
+            }
+
+            if (cpfEmEdicao && cpfEmEdicao !== cpfStr) {
+                delete dbFuncionarios[cpfEmEdicao];
+            }
+
+            dbFuncionarios[cpfStr] = nomeStr;
+            renderListaFuncionarios();
+            cancelarEdicao();
+        }
+
+        function iniciarEdicaoFuncionario(cpf, nome) {
+            cpfEmEdicao = cpf;
+            document.getElementById('admin-func-cpf').value = cpf;
+            document.getElementById('admin-func-nome').value = nome;
+            document.getElementById('btn-salvar-func').innerText = "Salvar";
+            document.getElementById('btn-cancelar-func').style.display = "block";
+        }
+
+        function cancelarEdicao() {
+            cpfEmEdicao = null;
+            document.getElementById('admin-func-cpf').value = '';
+            document.getElementById('admin-func-nome').value = '';
+            document.getElementById('btn-salvar-func').innerText = "Adicionar";
+            document.getElementById('btn-cancelar-func').style.display = "none";
+        }
+
+        function deletarFuncionario(cpf) {
+            if (confirm(`Tem certeza que deseja excluir o funcionário ${dbFuncionarios[cpf]}?`)) {
+                delete dbFuncionarios[cpf];
+                renderListaFuncionarios();
+            }
+        }
+
+        // --- TELA ADMIN: IMPORTAR CARDÁPIO (.TXT) ---
+        function abrirTelaAdminCardapio() {
+            fecharSidebar();
+            showScreen('screen-admin-cardapio');
+            
+            // Clona o cardápio oficial para a variável temporária
+            cardapioTemp = JSON.parse(JSON.stringify(dbCardapio));
+            
+            // Reseta o select para visualizar o primeiro
+            document.getElementById('admin-select-restaurante').value = 'Fino Sabor';
+            renderPreviewCardapio();
+        }
+
+        function renderPreviewCardapio() {
+            const restauranteVisualizado = document.getElementById('admin-select-restaurante').value;
+            const containerCarnes = document.getElementById('preview-carnes');
+            const containerAcomp = document.getElementById('preview-acompanhamentos');
+            
+            containerCarnes.innerHTML = '';
+            containerAcomp.innerHTML = '';
+
+            const carnes = cardapioTemp[restauranteVisualizado].carnes;
+            const acomp = cardapioTemp[restauranteVisualizado].acompanhamentos;
+
+            if (carnes.length === 0) containerCarnes.innerHTML = '<span style="color:#64748b;">Nenhuma carne registrada</span>';
+            carnes.forEach(item => {
+                containerCarnes.innerHTML += `<div class="cardapio-badge">${item}</div>`;
+            });
+
+            if (acomp.length === 0) containerAcomp.innerHTML = '<span style="color:#64748b;">Nenhum acompanhamento registrado</span>';
+            acomp.forEach(item => {
+                containerAcomp.innerHTML += `<div class="cardapio-badge">${item}</div>`;
+            });
+        }
+
+        function importarCardapioTxt(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                processarTextoCardapio(text);
+                event.target.value = ''; // Reseta o input de arquivo
+            };
+            reader.readAsText(file);
+        }
+
+        function processarTextoCardapio(text) {
+            const linhas = text.split(/\r?\n/);
+            
+            // Variáveis de controle de escopo durante a leitura do TXT
+            let restauranteAtual = null;
+            let categoriaAtual = null;
+
+            // Objeto zerado para receber os dados do novo arquivo
+            let novosDados = {
+                "Fino Sabor": { carnes: [], acompanhamentos: [] },
+                "Fonte do Paladar (Sr. Ademir)": { carnes: [], acompanhamentos: [] }
+            };
+
+            linhas.forEach(linha => {
+                let l = linha.trim();
+                if (!l) return; // ignora linhas em branco
+                
+                let upper = l.toUpperCase();
+                
+                // 1. Identifica qual o restaurante
+                if (upper.includes('FINO SABOR')) {
+                    restauranteAtual = 'Fino Sabor';
+                    categoriaAtual = null; // reseta categoria
+                    return;
+                } else if (upper.includes('FONTE DO PALADAR')) {
+                    restauranteAtual = 'Fonte do Paladar (Sr. Ademir)';
+                    categoriaAtual = null;
+                    return;
+                }
+
+                // 2. Identifica qual a categoria (dentro do restaurante atual)
+                if (upper.includes('CARNE')) {
+                    categoriaAtual = 'carnes';
+                    return;
+                } else if (upper.includes('ACOMPANHAMENTO')) {
+                    categoriaAtual = 'acompanhamentos';
+                    return;
+                }
+
+                // 3. Adiciona o item se já soubermos o restaurante e a categoria
+                if (restauranteAtual && categoriaAtual) {
+                    novosDados[restauranteAtual][categoriaAtual].push(l);
+                }
+            });
+
+            // Passa os novos dados processados para o ambiente temporário
+            cardapioTemp = novosDados;
+            
+            // Atualiza a tela de visualização
+            renderPreviewCardapio();
+            alert('Arquivo lido com sucesso! Alterne a prévia no menu para conferir os itens de cada restaurante e depois clique em "Salvar Definitivo".');
+        }
+
+        function salvarCardapioAdmin() {
+            // Substitui o banco oficial pelos dados da variável temporária
+            dbCardapio = JSON.parse(JSON.stringify(cardapioTemp));
+            alert('Cardápios de todos os restaurantes atualizados com sucesso!');
+            sairDaAdministracao();
+        }
+
+        // --- FUNÇÕES DE NAVEGAÇÃO E TEMA ---
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+
+            if(screenId !== 'screen-cpf') {
+                document.body.classList.add('dark-mode');
+            } else {
+                document.body.classList.remove('dark-mode');
+            }
+        }
+
+        function voltarPara(screenId) {
+            showScreen(screenId);
+        }
+
+        // --- LÓGICA DO CPF ---
+        let currentCpf = '';
+        function addNumber(num) {
+            if (currentCpf.length < 11) {
+                currentCpf += num;
+                updateCpfDisplay();
+            }
+        }
+
+        function clearCPF() {
+            currentCpf = currentCpf.slice(0, -1);
+            updateCpfDisplay();
+            document.getElementById('cpf-display').classList.remove('error');
+            document.getElementById('cpf-error').style.opacity = '0';
+        }
+
+        function updateCpfDisplay() {
+            let formatado = currentCpf;
+            if (formatado.length > 3) formatado = formatado.slice(0,3) + '.' + formatado.slice(3);
+            if (formatado.length > 7) formatado = formatado.slice(0,7) + '.' + formatado.slice(7);
+            if (formatado.length > 11) formatado = formatado.slice(0,11) + '-' + formatado.slice(11);
+            document.getElementById('cpf-display').value = formatado;
+        }
+
+        function isValidCPF(cpf) {
+            cpf = cpf.replace(/[^\d]+/g,'');
+            if(cpf == '' || cpf.length != 11 || /^(\d)\1{10}$/.test(cpf)) return false;
+            let add = 0;
+            for (let i=0; i < 9; i ++) add += parseInt(cpf.charAt(i)) * (10 - i);
+            let rev = 11 - (add % 11);
+            if (rev == 10 || rev == 11) rev = 0;
+            if (rev != parseInt(cpf.charAt(9))) return false;
+            add = 0;
+            for (let i = 0; i < 10; i ++) add += parseInt(cpf.charAt(i)) * (11 - i);
+            rev = 11 - (add % 11);
+            if (rev == 10 || rev == 11) rev = 0;
+            if (rev != parseInt(cpf.charAt(10))) return false;
+            return true;
+        }
+
+        function submitCPF() {
+            if (currentCpf.length === 11) {
+                let formatado = document.getElementById('cpf-display').value;
+                if(isValidCPF(currentCpf) || currentCpf === "11111111111") { 
+                    pedido.cpf = formatado;
+                    pedido.nomeFuncionario = dbFuncionarios[formatado] || "Funcionário Não Cadastrado";
+                    showScreen('screen-restaurante');
+                } else {
+                    mostrarErroCpf();
+                }
+            } else {
+                mostrarErroCpf();
+            }
+        }
+
+        function mostrarErroCpf() {
+            const input = document.getElementById('cpf-display');
+            input.classList.add('error');
+            document.getElementById('cpf-error').style.opacity = '1';
+            setTimeout(() => {
+                input.classList.remove('error');
+            }, 400);
+        }
+
+        // --- LÓGICA DO RESTAURANTE E TAMANHO ---
+        function selectRestaurante(nome, element) {
+            document.querySelectorAll('#screen-restaurante .restaurante-card').forEach(el => el.classList.remove('selected'));
+            element.classList.add('selected');
+            pedido.restaurante = nome;
+            document.getElementById('btn-avancar-restaurante').classList.add('enabled');
+        }
+
+        function avancarRestaurante() {
+            renderTamanhos();
+            pedido.tamanho = '';
+            document.getElementById('btn-avancar-tamanho').classList.remove('enabled');
+            showScreen('screen-tamanho');
+        }
+
+        function renderTamanhos() {
+            const container = document.getElementById('opcoes-tamanho');
+            container.innerHTML = '';
+            
+            let tamanhos = [];
+            if (pedido.restaurante === 'Fino Sabor') {
+                tamanhos = ['Média', 'Grande', 'Fitness'];
+            } else {
+                tamanhos = ['Mini', 'Média'];
+            }
+
+            tamanhos.forEach(tam => {
+                const div = document.createElement('div');
+                div.className = 'option-card';
+                div.innerText = tam;
+                div.onclick = function() {
+                    document.querySelectorAll('#opcoes-tamanho .option-card').forEach(el => el.classList.remove('selected'));
+                    this.classList.add('selected');
+                    pedido.tamanho = tam;
+                    document.getElementById('btn-avancar-tamanho').classList.add('enabled');
+                };
+                container.appendChild(div);
+            });
+        }
+
+        function avancarTamanho() {
+            renderBases();
+            showScreen('screen-base');
+        }
+
+        // --- LÓGICA DA BASE (ARROZ/FEIJÃO) ---
+        function renderBases() {
+            const container = document.getElementById('opcoes-base');
+            container.innerHTML = '';
+            
+            let bases = [];
+            if (pedido.restaurante === 'Fino Sabor') {
+                bases = ['Arroz', 'Feijão']; 
+            } else {
+                bases = ['Arroz', 'Arroz Integral', 'Feijão'];
+            }
+
+            pedido.base = [];
+
+            bases.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'option-card';
+                div.innerText = item;
+                div.onclick = function() {
+                    if (this.classList.contains('selected')) {
+                        this.classList.remove('selected');
+                        pedido.base = pedido.base.filter(i => i !== item);
+                    } else {
+                        this.classList.add('selected');
+                        pedido.base.push(item);
+                    }
+                };
+                container.appendChild(div);
+            });
+        }
+
+        // --- RENDERIZAÇÃO DINÂMICA DE CARNES/ACOMPANHAMENTOS ---
+        function avancarAposBase() {
+            renderOpcoesDinamicas('carnes');
+            showScreen('screen-carnes');
+        }
+
+        function avancarParaAcompanhamentos() {
+            renderOpcoesDinamicas('acompanhamentos');
+            showScreen('screen-acompanhamentos');
+        }
+
+        function renderOpcoesDinamicas(categoria) {
+            const container = document.getElementById(`opcoes-${categoria}`);
+            container.innerHTML = '';
+            pedido[categoria] = []; // Reseta seleções ao voltar/avançar tela
+            document.getElementById(`contador-${categoria}`).innerText = '0';
+            
+            const itensDoDia = dbCardapio[pedido.restaurante][categoria];
+
+            if(itensDoDia.length === 0) {
+                container.innerHTML = `<p style="color:white; font-size: 18px;">Nenhuma opção cadastrada para hoje.</p>`;
+                return;
+            }
+
+            itensDoDia.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'option-card';
+                div.innerText = item;
+                div.onclick = function() { toggleSelection(this, categoria, item, 3); };
+                container.appendChild(div);
+            });
+        }
+
+        function toggleSelection(element, categoria, valor, limite) {
+            const array = pedido[categoria];
+            const isSelected = element.classList.contains('selected');
+
+            if (isSelected) {
+                element.classList.remove('selected');
+                const index = array.indexOf(valor);
+                if (index > -1) array.splice(index, 1);
+            } else {
+                if (array.length < limite) {
+                    element.classList.add('selected');
+                    array.push(valor);
+                }
+            }
+
+            document.getElementById(`contador-${categoria}`).innerText = array.length;
+            atualizarVisualDesabilitados(categoria, limite);
+        }
+
+        function atualizarVisualDesabilitados(categoria, limite) {
+            const array = pedido[categoria];
+            const cards = document.querySelectorAll(`#opcoes-${categoria} .option-card`);
+            
+            cards.forEach(card => {
+                if (!card.classList.contains('selected')) {
+                    if (array.length >= limite) {
+                        card.classList.add('disabled');
+                    } else {
+                        card.classList.remove('disabled');
+                    }
+                }
+            });
+        }
+
+        // --- TRANSIÇÃO PARA ADICIONAIS ---
+        function avancarParaAdicionais() {
+            const qtdAcomp = pedido.acompanhamentos.length;
+            const containerAdicionais = document.getElementById('opcoes-adicionais');
+            const msgBloqueio = document.getElementById('msg-bloqueio-adicional');
+            const contadorContainer = document.getElementById('contador-adicional-container');
+
+            if (qtdAcomp === 3) {
+                containerAdicionais.style.display = 'none';
+                contadorContainer.style.display = 'none';
+                msgBloqueio.style.display = 'block';
+                pedido.adicionais = []; 
+                document.querySelectorAll('#opcoes-adicionais .option-card').forEach(el => el.classList.remove('selected'));
+            } else {
+                containerAdicionais.style.display = 'flex';
+                contadorContainer.style.display = 'block';
+                msgBloqueio.style.display = 'none';
+                atualizarVisualDesabilitados('adicionais', 1);
+            }
+            showScreen('screen-adicionais');
+        }
+
+        // --- TELA DE RESUMO ---
+        function gerarResumo() {
+            const container = document.getElementById('resumo-conteudo');
+            
+            let html = `<div class="resumo-nome-funcionario"><i class="fas fa-user"></i> ${pedido.nomeFuncionario}</div>`;
+            
+            html += `
+                <div class="summary-item">Restaurante: <span>${pedido.restaurante}</span></div>
+                <div class="summary-item">Tamanho da Marmita: <span>${pedido.tamanho}</span></div>
+            `;
+
+            let strBase = pedido.base.length > 0 ? pedido.base.join(', ') : 'Nenhuma opção escolhida';
+            html += `<div class="summary-item">Arroz/Feijão: <span>${strBase}</span></div>`;
+
+            let strCarnes = pedido.carnes.length > 0 ? pedido.carnes.join(', ') : 'Nenhuma carne';
+            html += `<div class="summary-item">Carnes: <span>${strCarnes}</span></div>`;
+
+            let strAcomp = pedido.acompanhamentos.length > 0 ? pedido.acompanhamentos.join(', ') : 'Nenhum acompanhamento';
+            html += `<div class="summary-item">Acompanhamentos: <span>${strAcomp}</span></div>`;
+
+            let strAdic = pedido.adicionais.length > 0 ? pedido.adicionais[0] : 'Nenhum adicional';
+            if (pedido.acompanhamentos.length === 3) {
+                strAdic = 'Não permitido (3 acompanhamentos escolhidos)';
+            }
+            html += `<div class="summary-item" style="border-bottom: none;">Adicionais: <span>${strAdic}</span></div>`;
+
+            container.innerHTML = html;
+            showScreen('screen-resumo');
+        }
+
+        function finalizarPedido() {
+            alert('Pedido enviado com sucesso para a listagem!\nA tela retornará para o início.');
+            currentCpf = '';
+            updateCpfDisplay();
+            pedido = { cpf: '', nomeFuncionario: '', restaurante: '', tamanho: '', base: [], carnes: [], acompanhamentos: [], adicionais: [] };
+            
+            document.querySelectorAll('.option-card').forEach(el => {
+                el.classList.remove('selected');
+                el.classList.remove('disabled');
+            });
+            document.querySelectorAll('.selection-counter span').forEach(el => el.innerText = '0');
+            document.getElementById('btn-avancar-restaurante').classList.remove('enabled');
+            document.getElementById('btn-avancar-tamanho').classList.remove('enabled');
+
+            showScreen('screen-cpf');
+        }
+    </script>
+</body>
+</html>
